@@ -18,13 +18,7 @@ func NewServiceStack(scope constructs.Construct, id string, props *ServiceStackP
 	}
 	stack := awscdk.NewStack(scope, &id, &sprops)
 
-	// The code that defines your stack goes here
-
-	// example resource
-	// queue := awssqs.NewQueue(stack, jsii.String("ServiceQueue"), &awssqs.QueueProps{
-	// 	VisibilityTimeout: awscdk.Duration_Seconds(jsii.Number(300)),
-	// })
-
+	
 	return stack
 }
 
