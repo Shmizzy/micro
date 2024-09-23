@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/aws/aws-cdk-go/awscdk/v2"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awsapigateway"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awscognito"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsdynamodb"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
@@ -78,9 +79,49 @@ func NewUserServiceStack(scope constructs.Construct, id string, props *UserServi
 		},
 	})
 
+	api := awsapigateway.NewRestApi(stack, jsii.String("UserApi"), &awsapigateway.RestApiProps{
+		RestApiName: jsii.String("User Service API"),
+		Description: jsii.String("API Gateway for User Service"),
+		DefaultCorsPreflightOptions: &awsapigateway.CorsOptions{
+			AllowOrigins: awsapigateway.Cors_ALL_ORIGINS(),
+			AllowMethods: awsapigateway.Cors_ALL_METHODS(),
+			AllowHeaders: jsii.Strings("Content-Type", "Authorization"),
+		},
+	})
+
+	registerResource := api.Root().AddResource(jsii.String("register"), nil)
+	loginResource := api.Root().AddResource(jsii.String("login"), nil)
+
+	auth := awsapigateway.NewCognitoUserPoolsAuthorizer(stack, jsii.String("UserPoolAuthorizer"), &awsapigateway.CognitoUserPoolsAuthorizerProps{
+		CognitoUserPools: &[]awscognito.IUserPool{
+			userPool,
+		},
+	})
+
+	registerIntegration := awsapigateway.NewLambdaIntegration(registerFunction, &awsapigateway.LambdaIntegrationOptions{
+		RequestTemplates: &map[string]*string{
+			"application/json": jsii.String(`{"statusCode": "200"}`),
+		},
+	})
+
+	loginIntegration := awsapigateway.NewLambdaIntegration(loginFunction, &awsapigateway.LambdaIntegrationOptions{
+		RequestTemplates: &map[string]*string{
+			"application/json": jsii.String(`{"statusCode": "200"}`),
+		},
+	})
+
+	registerResource.AddMethod(jsii.String("POST"), registerIntegration, &awsapigateway.MethodOptions{
+		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
+		Authorizer:        auth,
+	})
+	loginResource.AddMethod(jsii.String("POST"), loginIntegration, &awsapigateway.MethodOptions{
+		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
+		Authorizer:        auth,
+	})
+
 	userPool.AddTrigger(awscognito.UserPoolOperation_PRE_SIGN_UP(), registerFunction, awscognito.LambdaVersion_V2_0)
 	userPool.AddTrigger(awscognito.UserPoolOperation_PRE_AUTHENTICATION(), loginFunction, awscognito.LambdaVersion_V2_0)
-	
+
 	table.GrantReadWriteData(registerFunction)
 	table.GrantReadWriteData(loginFunction)
 
