@@ -1,5 +1,5 @@
 {
-    "taskDefinitionArn": "arn:aws:ecs:us-east-1:992382374646:task-definition/user-service-task:1",
+    "family": "user-service-task",
     "containerDefinitions": [
         {
             "name": "user-service",
@@ -23,13 +23,10 @@
             "systemControls": []
         }
     ],
-    "family": "user-service-task",
     "taskRoleArn": "arn:aws:iam::992382374646:role/ecsTaskExecutionRole",
     "executionRoleArn": "arn:aws:iam::992382374646:role/ecsTaskExecutionRole",
     "networkMode": "awsvpc",
-    "revision": 1,
     "volumes": [],
-    "status": "ACTIVE",
     "requiresAttributes": [
         {
             "name": "com.amazonaws.ecs.capability.ecr-auth"
@@ -61,7 +58,5 @@
         "cpuArchitecture": "X86_64",
         "operatingSystemFamily": "LINUX"
     },
-    "registeredAt": "2024-09-23T20:08:53.025Z",
-    "registeredBy": "arn:aws:iam::992382374646:root",
     "tags": []
 }
