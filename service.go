@@ -25,14 +25,14 @@ func NewUserServiceStack(scope constructs.Construct, id string, props *ServiceSt
 
 	registerFunction := awslambda.NewFunction(stack, jsii.String("registerFunction"), &awslambda.FunctionProps{
 		Runtime: awslambda.Runtime_PROVIDED_AL2023(),
-		Handler: jsii.String("register.handler"),
-		Code:    awslambda.AssetCode_FromAsset(jsii.String("lambda/register.zip"), nil),
+		Handler: jsii.String("register"),
+		Code:    awslambda.AssetCode_FromAsset(jsii.String("handlers/register.zip"), nil),
 	})
 
 	loginFunction := awslambda.NewFunction(stack, jsii.String("loginFunction"), &awslambda.FunctionProps{
 		Runtime: awslambda.Runtime_PROVIDED_AL2023(),
-		Handler: jsii.String("login.handler"),
-		Code:    awslambda.AssetCode_FromAsset(jsii.String("lambda/login.zip"), nil),
+		Handler: jsii.String("login"),
+		Code:    awslambda.AssetCode_FromAsset(jsii.String("handlers/login.zip"), nil),
 	})
 
 	userPool := awscognito.NewUserPool(stack, jsii.String("UserPool"), &awscognito.UserPoolProps{
@@ -121,8 +121,8 @@ func NewUserServiceStack(scope constructs.Construct, id string, props *ServiceSt
 		Authorizer:        auth,
 	})
 
-	userPool.AddTrigger(awscognito.UserPoolOperation_PRE_SIGN_UP(), registerFunction, awscognito.LambdaVersion_V2_0)
-	userPool.AddTrigger(awscognito.UserPoolOperation_PRE_AUTHENTICATION(), loginFunction, awscognito.LambdaVersion_V2_0)
+	userPool.AddTrigger(awscognito.UserPoolOperation_PRE_SIGN_UP(), registerFunction, awscognito.LambdaVersion_V1_0)
+	userPool.AddTrigger(awscognito.UserPoolOperation_PRE_AUTHENTICATION(), loginFunction, awscognito.LambdaVersion_V1_0)
 
 	table.GrantReadWriteData(registerFunction)
 	table.GrantReadWriteData(loginFunction)
