@@ -5,19 +5,21 @@ import (
 	"net/http"
 	"service/models"
 	"service/services"
+
+	"github.com/aws/aws-lambda-go/events"
 )
 
-func LoginHandler(w http.ResponseWriter, r *http.Request) {
+func LoginHandler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	var credentials models.Credentials
-	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	token, err := services.LoginUser(credentials)
+	err := json.Unmarshal([]byte(request.Body), &credentials)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
+		return events.APIGatewayProxyResponse{StatusCode: http.StatusBadRequest, Body: "Invalid request body"}, nil
 	}
 
-	json.NewEncoder(w).Encode(map[string]string{"token": token})
+	token, err := services.LoginUser(credentials)
+	if err != nil {
+		return events.APIGatewayProxyResponse{StatusCode: http.StatusUnauthorized, Body: err.Error()}, nil
+	}
+
+	return events.APIGatewayProxyResponse{StatusCode: http.StatusOK, Body: token}, nil
 }

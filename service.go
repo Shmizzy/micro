@@ -25,14 +25,20 @@ func NewUserServiceStack(scope constructs.Construct, id string, props *ServiceSt
 
 	registerFunction := awslambda.NewFunction(stack, jsii.String("registerFunction"), &awslambda.FunctionProps{
 		Runtime: awslambda.Runtime_PROVIDED_AL2023(),
-		Handler: jsii.String("register"),
-		Code:    awslambda.AssetCode_FromAsset(jsii.String("handlers/register.zip"), nil),
+		Handler: jsii.String("main"),
+		Code:    awslambda.AssetCode_FromAsset(jsii.String("cmd/register/register.zip"), nil),
 	})
 
 	loginFunction := awslambda.NewFunction(stack, jsii.String("loginFunction"), &awslambda.FunctionProps{
 		Runtime: awslambda.Runtime_PROVIDED_AL2023(),
-		Handler: jsii.String("login"),
-		Code:    awslambda.AssetCode_FromAsset(jsii.String("handlers/login.zip"), nil),
+		Handler: jsii.String("main"),
+		Code:    awslambda.AssetCode_FromAsset(jsii.String("cmd/login/login.zip"), nil),
+	})
+
+	confirmFunction := awslambda.NewFunction(stack, jsii.String("confirmFunction"), &awslambda.FunctionProps{
+		Runtime: awslambda.Runtime_PROVIDED_AL2023(),
+		Handler: jsii.String("main"),
+		Code:    awslambda.AssetCode_FromAsset(jsii.String("cmd/confirm/confirm.zip"), nil),
 	})
 
 	userPool := awscognito.NewUserPool(stack, jsii.String("UserPool"), &awscognito.UserPoolProps{
@@ -54,14 +60,14 @@ func NewUserServiceStack(scope constructs.Construct, id string, props *ServiceSt
 			},
 		},
 		AutoVerify: &awscognito.AutoVerifiedAttrs{
-			Email: jsii.Bool(true),
-			Phone: jsii.Bool(true),
+			Email: jsii.Bool(false),
+			Phone: jsii.Bool(false),
 		},
 		MfaSecondFactor: &awscognito.MfaSecondFactor{
 			Sms: jsii.Bool(true),
 			Otp: jsii.Bool(false),
 		},
-		Mfa:        awscognito.Mfa_REQUIRED,
+		Mfa:        awscognito.Mfa_OPTIONAL,
 		MfaMessage: jsii.String("Your verification code for yardex is {####}"),
 		PasswordPolicy: &awscognito.PasswordPolicy{
 			MinLength:        jsii.Number(8),
@@ -71,6 +77,12 @@ func NewUserServiceStack(scope constructs.Construct, id string, props *ServiceSt
 			RequireSymbols:   jsii.Bool(false),
 		},
 		AccountRecovery: awscognito.AccountRecovery_PHONE_AND_EMAIL,
+		UserVerification: &awscognito.UserVerificationConfig{
+			EmailSubject: jsii.String("Verify your email for yardex"),
+			EmailBody:    jsii.String("Hello {username}, your verification code is {####}"),
+			SmsMessage:   jsii.String("Hello {username}, your verification code is {####}"),
+			EmailStyle:   awscognito.VerificationEmailStyle_CODE,
+		},
 	})
 
 	table := awsdynamodb.NewTableV2(stack, jsii.String("UserTable"), &awsdynamodb.TablePropsV2{
@@ -93,6 +105,7 @@ func NewUserServiceStack(scope constructs.Construct, id string, props *ServiceSt
 
 	registerResource := api.Root().AddResource(jsii.String("register"), nil)
 	loginResource := api.Root().AddResource(jsii.String("login"), nil)
+	confirmResource := api.Root().AddResource(jsii.String("confirm"), nil)
 
 	auth := awsapigateway.NewCognitoUserPoolsAuthorizer(stack, jsii.String("UserPoolAuthorizer"), &awsapigateway.CognitoUserPoolsAuthorizerProps{
 		CognitoUserPools: &[]awscognito.IUserPool{
@@ -112,6 +125,12 @@ func NewUserServiceStack(scope constructs.Construct, id string, props *ServiceSt
 		},
 	})
 
+	confirmIntegration := awsapigateway.NewLambdaIntegration(confirmFunction, &awsapigateway.LambdaIntegrationOptions{
+		RequestTemplates: &map[string]*string{
+			"application/json": jsii.String(`{"statusCode": "200"}`),
+		},
+	})
+
 	registerResource.AddMethod(jsii.String("POST"), registerIntegration, &awsapigateway.MethodOptions{
 		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
 		Authorizer:        auth,
@@ -120,12 +139,17 @@ func NewUserServiceStack(scope constructs.Construct, id string, props *ServiceSt
 		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
 		Authorizer:        auth,
 	})
+	confirmResource.AddMethod(jsii.String("POST"), confirmIntegration, &awsapigateway.MethodOptions{
+		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
+		Authorizer:        auth,
+	})
 
-	userPool.AddTrigger(awscognito.UserPoolOperation_PRE_SIGN_UP(), registerFunction, awscognito.LambdaVersion_V1_0)
+	/* userPool.AddTrigger(awscognito.UserPoolOperation_PRE_SIGN_UP(), registerFunction, awscognito.LambdaVersion_V1_0)
 	userPool.AddTrigger(awscognito.UserPoolOperation_PRE_AUTHENTICATION(), loginFunction, awscognito.LambdaVersion_V1_0)
-
+	*/
 	table.GrantReadWriteData(registerFunction)
 	table.GrantReadWriteData(loginFunction)
+	table.GrantReadWriteData(confirmFunction)
 
 	return stack
 }
