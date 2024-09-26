@@ -61,7 +61,7 @@ func NewUserServiceStack(scope constructs.Construct, id string, props *ServiceSt
 		},
 		AutoVerify: &awscognito.AutoVerifiedAttrs{
 			Email: jsii.Bool(false),
-			Phone: jsii.Bool(false),
+			Phone: jsii.Bool(true),
 		},
 		MfaSecondFactor: &awscognito.MfaSecondFactor{
 			Sms: jsii.Bool(true),
