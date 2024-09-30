@@ -60,7 +60,7 @@ func NewUserServiceStack(scope constructs.Construct, id string, props *ServiceSt
 			},
 		},
 		AutoVerify: &awscognito.AutoVerifiedAttrs{
-			Email: jsii.Bool(false),
+			Email: jsii.Bool(true),
 			Phone: jsii.Bool(true),
 		},
 		MfaSecondFactor: &awscognito.MfaSecondFactor{
@@ -103,15 +103,15 @@ func NewUserServiceStack(scope constructs.Construct, id string, props *ServiceSt
 		},
 	})
 
-	registerResource := api.Root().AddResource(jsii.String("register"), nil)
-	loginResource := api.Root().AddResource(jsii.String("login"), nil)
-	confirmResource := api.Root().AddResource(jsii.String("confirm"), nil)
-
 	auth := awsapigateway.NewCognitoUserPoolsAuthorizer(stack, jsii.String("UserPoolAuthorizer"), &awsapigateway.CognitoUserPoolsAuthorizerProps{
 		CognitoUserPools: &[]awscognito.IUserPool{
 			userPool,
 		},
 	})
+
+	registerResource := api.Root().AddResource(jsii.String("register"), nil)
+	loginResource := api.Root().AddResource(jsii.String("login"), nil)
+	confirmResource := api.Root().AddResource(jsii.String("confirm"), nil)
 
 	registerIntegration := awsapigateway.NewLambdaIntegration(registerFunction, &awsapigateway.LambdaIntegrationOptions{
 		RequestTemplates: &map[string]*string{
