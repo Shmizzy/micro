@@ -1,44 +1,24 @@
 package services
 
 import (
-	"errors"
-	"fmt"
-	"log"
-	"os"
-	"service/models"
-
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/cognitoidentityprovider"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"github.com/joho/godotenv"
 )
 
-var (
-	cognitoClient *cognitoidentityprovider.CognitoIdentityProvider
-	dynamoClient  *dynamodb.DynamoDB
-	userPoolId    string
-	clientId      string
-	dynamoTable   string
-)
+var dynamoClient *dynamodb.DynamoDB
+var tableName string
 
 func init() {
-	godotenv.Load("../.env")
-
-	userPoolId = os.Getenv("USER_POOL_ID")
-	clientId = os.Getenv("CLIENT_ID")
-	dynamoTable = os.Getenv("DYNAMO_TABLE")
-
+	/* 	godotenv.Load("../.env") */
 	sess := session.Must(session.NewSession(&aws.Config{
 		Region: aws.String("us-east-1"),
 	}))
-	cognitoClient = cognitoidentityprovider.New(sess)
 	dynamoClient = dynamodb.New(sess)
+	tableName = os.Getenv("USERS_TABLE")
 }
 
-func RegisterUser(user models.User) error {
+/* func RegisterUser(user models.User) error {
 	log.Printf("Registering user: %v\n", user)
 	signUp := &cognitoidentityprovider.SignUpInput{
 		ClientId: aws.String(clientId),
@@ -126,3 +106,4 @@ func LoginUser(user models.Credentials) (string, error) {
 	return *resp.AuthenticationResult.IdToken, nil
 
 }
+*/
