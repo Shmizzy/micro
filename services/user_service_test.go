@@ -7,10 +7,10 @@ import (
 
 func TestRegisterUser(t *testing.T) {
 	user := models.User{
-		Username:    "izzylppz",
-		Email:       "izzylppz@gmail.com",
+		Username:    "shmizzyz",
+		Email:       "shmizzyz@gmail.com",
 		Password:    "Deeboo49",
-		PhoneNumber: "+19568623733",
+		PhoneNumber: "+19568623033",
 	}
 
 	err := RegisterUser(user)
@@ -48,7 +48,7 @@ func TestRegisterUser(t *testing.T) {
 		t.Fatalf("expected token, got empty string")
 	}
 }
- */
+*/
 /* func TestLoginUser_InvalidCredentials(t *testing.T) {
 	credentials := models.Credentials{
 		Email:    "test@example.com",

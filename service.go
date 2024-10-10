@@ -23,22 +23,89 @@ func NewUserServiceStack(scope constructs.Construct, id string, props *ServiceSt
 	}
 	stack := awscdk.NewStack(scope, &id, &sprops)
 
-	registerFunction := awslambda.NewFunction(stack, jsii.String("registerFunction"), &awslambda.FunctionProps{
+	createUser := awslambda.NewFunction(stack, jsii.String("confirmFunction"), &awslambda.FunctionProps{
 		Runtime: awslambda.Runtime_PROVIDED_AL2023(),
 		Handler: jsii.String("main"),
-		Code:    awslambda.AssetCode_FromAsset(jsii.String("cmd/register/register.zip"), nil),
+		Code:    awslambda.AssetCode_FromAsset(jsii.String("cmd/create_user/createUser.zip"), nil),
 	})
 
-	loginFunction := awslambda.NewFunction(stack, jsii.String("loginFunction"), &awslambda.FunctionProps{
+	getUser := awslambda.NewFunction(stack, jsii.String("getUserFunction"), &awslambda.FunctionProps{
 		Runtime: awslambda.Runtime_PROVIDED_AL2023(),
 		Handler: jsii.String("main"),
-		Code:    awslambda.AssetCode_FromAsset(jsii.String("cmd/login/login.zip"), nil),
+		Code:    awslambda.AssetCode_FromAsset(jsii.String("cmd/get_user/getUser.zip"), nil),
 	})
 
-	confirmFunction := awslambda.NewFunction(stack, jsii.String("confirmFunction"), &awslambda.FunctionProps{
+	updateUser := awslambda.NewFunction(stack, jsii.String("updateUserFunction"), &awslambda.FunctionProps{
 		Runtime: awslambda.Runtime_PROVIDED_AL2023(),
 		Handler: jsii.String("main"),
-		Code:    awslambda.AssetCode_FromAsset(jsii.String("cmd/confirm/confirm.zip"), nil),
+		Code:    awslambda.AssetCode_FromAsset(jsii.String("cmd/update_user/updateUser.zip"), nil),
+	})
+
+	deleteUser := awslambda.NewFunction(stack, jsii.String("deleteUserFunction"), &awslambda.FunctionProps{
+		Runtime: awslambda.Runtime_PROVIDED_AL2023(),
+		Handler: jsii.String("main"),
+		Code:    awslambda.AssetCode_FromAsset(jsii.String("cmd/delete_user/deleteUser.zip"), nil),
+	})
+
+	createServicerProfile := awslambda.NewFunction(stack, jsii.String("createServicerProfileFunction"), &awslambda.FunctionProps{
+		Runtime: awslambda.Runtime_PROVIDED_AL2023(),
+		Handler: jsii.String("main"),
+		Code:    awslambda.AssetCode_FromAsset(jsii.String("cmd/create_servicer_profile/createServicerProfile.zip"), nil),
+	})
+
+	updateServicerProfile := awslambda.NewFunction(stack, jsii.String("updateServicerProfileFunction"), &awslambda.FunctionProps{
+		Runtime: awslambda.Runtime_PROVIDED_AL2023(),
+		Handler: jsii.String("main"),
+		Code:    awslambda.AssetCode_FromAsset(jsii.String("cmd/update_servicer_profile/updateServicerProfile.zip"), nil),
+	})
+
+	getServicerProfile := awslambda.NewFunction(stack, jsii.String("getServicerProfileFunction"), &awslambda.FunctionProps{
+		Runtime: awslambda.Runtime_PROVIDED_AL2023(),
+		Handler: jsii.String("main"),
+		Code:    awslambda.AssetCode_FromAsset(jsii.String("cmd/get_servicer_profile/getServicerProfile.zip"), nil),
+	})
+
+	api := awsapigateway.NewRestApi(stack, jsii.String("UserApi"), &awsapigateway.RestApiProps{
+		RestApiName: jsii.String("User Service API"),
+		Description: jsii.String("API Gateway for User Service"),
+		DefaultCorsPreflightOptions: &awsapigateway.CorsOptions{
+			AllowOrigins: awsapigateway.Cors_ALL_ORIGINS(),
+			AllowMethods: awsapigateway.Cors_ALL_METHODS(),
+			AllowHeaders: jsii.Strings("Content-Type", "Authorization"),
+		},
+	})
+
+	userTable := awsdynamodb.NewTableV2(stack, jsii.String("UserTable"), &awsdynamodb.TablePropsV2{
+		TableName: jsii.String("usersTable"),
+		PartitionKey: &awsdynamodb.Attribute{
+			Name: jsii.String("UserId"),
+			Type: awsdynamodb.AttributeType_STRING,
+		},
+	})
+
+	customerProfilesTable := awsdynamodb.NewTableV2(stack, jsii.String("CustomerProfileTable"), &awsdynamodb.TablePropsV2{
+		TableName: jsii.String("customerProfilesTable"),
+		PartitionKey: &awsdynamodb.Attribute{
+			Name: jsii.String("UserId"),
+			Type: awsdynamodb.AttributeType_STRING,
+		},
+	})
+
+	servicerProfilesTable := awsdynamodb.NewTableV2(stack, jsii.String("ServicerProfileTable"), &awsdynamodb.TablePropsV2{
+		TableName: jsii.String("servicerProfilesTable"),
+		PartitionKey: &awsdynamodb.Attribute{
+			Name: jsii.String("UserId"),
+			Type: awsdynamodb.AttributeType_STRING,
+		},
+	})
+	postConfirmationFunction := awslambda.NewFunction(stack, jsii.String("PostConfirmationFunction"), &awslambda.FunctionProps{
+		Runtime: awslambda.Runtime_PROVIDED_AL2023(),
+		Handler: jsii.String("main"),
+		Code:    awslambda.AssetCode_FromAsset(jsii.String("cmd/post_confirmation/postConfirmation.zip"), nil),
+		Environment: &map[string]*string{
+			"USERS_TABLE":             userTable.TableName(),
+			"CUSTOMER_PROFILES_TABLE": customerProfilesTable.TableName(),
+		},
 	})
 
 	userPool := awscognito.NewUserPool(stack, jsii.String("UserPool"), &awscognito.UserPoolProps{
@@ -79,27 +146,9 @@ func NewUserServiceStack(scope constructs.Construct, id string, props *ServiceSt
 		AccountRecovery: awscognito.AccountRecovery_PHONE_AND_EMAIL,
 		UserVerification: &awscognito.UserVerificationConfig{
 			EmailSubject: jsii.String("Verify your email for yardex"),
-			EmailBody:    jsii.String("Hello {username}, your verification code is {####}"),
-			SmsMessage:   jsii.String("Hello {username}, your verification code is {####}"),
+			EmailBody:    jsii.String("Hello {name}, your verification code is {####}"),
+			SmsMessage:   jsii.String("Hello {name}, your verification code is {####}"),
 			EmailStyle:   awscognito.VerificationEmailStyle_CODE,
-		},
-	})
-
-	table := awsdynamodb.NewTableV2(stack, jsii.String("UserTable"), &awsdynamodb.TablePropsV2{
-		TableName: jsii.String("userDB"),
-		PartitionKey: &awsdynamodb.Attribute{
-			Name: jsii.String("uid"),
-			Type: awsdynamodb.AttributeType_STRING,
-		},
-	})
-
-	api := awsapigateway.NewRestApi(stack, jsii.String("UserApi"), &awsapigateway.RestApiProps{
-		RestApiName: jsii.String("User Service API"),
-		Description: jsii.String("API Gateway for User Service"),
-		DefaultCorsPreflightOptions: &awsapigateway.CorsOptions{
-			AllowOrigins: awsapigateway.Cors_ALL_ORIGINS(),
-			AllowMethods: awsapigateway.Cors_ALL_METHODS(),
-			AllowHeaders: jsii.Strings("Content-Type", "Authorization"),
 		},
 	})
 
@@ -109,47 +158,94 @@ func NewUserServiceStack(scope constructs.Construct, id string, props *ServiceSt
 		},
 	})
 
-	registerResource := api.Root().AddResource(jsii.String("register"), nil)
-	loginResource := api.Root().AddResource(jsii.String("login"), nil)
-	confirmResource := api.Root().AddResource(jsii.String("confirm"), nil)
+	userTable.GrantWriteData(postConfirmationFunction)
+	customerProfilesTable.GrantWriteData(postConfirmationFunction)
+	userTable.GrantReadWriteData(createUser)
+	userTable.GrantReadData(getUser)
+	userTable.GrantReadWriteData(updateUser)
+	userTable.GrantReadWriteData(deleteUser)
+	customerProfilesTable.GrantReadWriteData(createUser)
+	customerProfilesTable.GrantReadData(getUser)
+	customerProfilesTable.GrantReadWriteData(updateUser)
+	servicerProfilesTable.GrantReadWriteData(createServicerProfile)
+	servicerProfilesTable.GrantReadWriteData(updateServicerProfile)
+	servicerProfilesTable.GrantReadData(getServicerProfile)
 
-	registerIntegration := awsapigateway.NewLambdaIntegration(registerFunction, &awsapigateway.LambdaIntegrationOptions{
-		RequestTemplates: &map[string]*string{
-			"application/json": jsii.String(`{"statusCode": "200"}`),
-		},
-	})
+	createUser.AddEnvironment(jsii.String("USERS_TABLE"), userTable.TableName(), nil)
+	createUser.AddEnvironment(jsii.String("CUSTOMER_PROFILES_TABLE"), customerProfilesTable.TableName(), nil)
+	getUser.AddEnvironment(jsii.String("USERS_TABLE"), userTable.TableName(), nil)
+	getUser.AddEnvironment(jsii.String("CUSTOMER_PROFILES_TABLE"), customerProfilesTable.TableName(), nil)
+	updateUser.AddEnvironment(jsii.String("USERS_TABLE"), userTable.TableName(), nil)
+	updateUser.AddEnvironment(jsii.String("CUSTOMER_PROFILES_TABLE"), customerProfilesTable.TableName(), nil)
+	deleteUser.AddEnvironment(jsii.String("USERS_TABLE"), userTable.TableName(), nil)
+	deleteUser.AddEnvironment(jsii.String("CUSTOMER_PROFILES_TABLE"), customerProfilesTable.TableName(), nil)
+	createServicerProfile.AddEnvironment(jsii.String("SERVICER_PROFILES_TABLE"), servicerProfilesTable.TableName(), nil)
+	updateServicerProfile.AddEnvironment(jsii.String("SERVICER_PROFILES_TABLE"), servicerProfilesTable.TableName(), nil)
+	getServicerProfile.AddEnvironment(jsii.String("SERVICER_PROFILES_TABLE"), servicerProfilesTable.TableName(), nil)
 
-	loginIntegration := awsapigateway.NewLambdaIntegration(loginFunction, &awsapigateway.LambdaIntegrationOptions{
-		RequestTemplates: &map[string]*string{
-			"application/json": jsii.String(`{"statusCode": "200"}`),
-		},
-	})
+	usersResource := api.Root().AddResource(jsii.String("users"), nil)
+	servicerProfilesResource := api.Root().AddResource(jsii.String("servicer-profiles"), nil)
 
-	confirmIntegration := awsapigateway.NewLambdaIntegration(confirmFunction, &awsapigateway.LambdaIntegrationOptions{
-		RequestTemplates: &map[string]*string{
-			"application/json": jsii.String(`{"statusCode": "200"}`),
-		},
-	})
+	userPool.AddTrigger(awscognito.UserPoolOperation_POST_CONFIRMATION(), postConfirmationFunction, awscognito.LambdaVersion_V1_0)
 
-	registerResource.AddMethod(jsii.String("POST"), registerIntegration, &awsapigateway.MethodOptions{
+	// route -- users
+	usersResource.AddMethod(jsii.String("POST"), awsapigateway.NewLambdaIntegration(createUser, nil), &awsapigateway.MethodOptions{
 		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
 		Authorizer:        auth,
 	})
-	loginResource.AddMethod(jsii.String("POST"), loginIntegration, &awsapigateway.MethodOptions{
+
+	// route -- users/{userId}
+	userResource := usersResource.AddResource(jsii.String("{userId}"), nil)
+
+	userResource.AddMethod(jsii.String("GET"), awsapigateway.NewLambdaIntegration(getUser, nil), &awsapigateway.MethodOptions{
 		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
 		Authorizer:        auth,
 	})
-	confirmResource.AddMethod(jsii.String("POST"), confirmIntegration, &awsapigateway.MethodOptions{
+
+	userResource.AddMethod(jsii.String("PUT"), awsapigateway.NewLambdaIntegration(updateUser, nil), &awsapigateway.MethodOptions{
 		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
 		Authorizer:        auth,
+	})
+
+	userResource.AddMethod(jsii.String("DELETE"), awsapigateway.NewLambdaIntegration(deleteUser, nil), &awsapigateway.MethodOptions{
+		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
+		Authorizer:        auth,
+	})
+
+	// route -- servicer-profiles
+	servicerProfilesResource.AddMethod(jsii.String("POST"), awsapigateway.NewLambdaIntegration(createServicerProfile, nil), &awsapigateway.MethodOptions{
+		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
+		Authorizer:        auth,
+	})
+
+	// route -- servicer-profiles/{userId}
+	servicerProfileResource := servicerProfilesResource.AddResource(jsii.String("{userId}"), nil)
+
+	servicerProfileResource.AddMethod(jsii.String("GET"), awsapigateway.NewLambdaIntegration(getServicerProfile, nil), &awsapigateway.MethodOptions{
+		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
+		Authorizer:        auth,
+	})
+
+	servicerProfileResource.AddMethod(jsii.String("PUT"), awsapigateway.NewLambdaIntegration(updateServicerProfile, nil), &awsapigateway.MethodOptions{
+		AuthorizationType: awsapigateway.AuthorizationType_COGNITO,
+		Authorizer:        auth,
+	})
+
+	awscdk.NewCfnOutput(stack, jsii.String("UserPoolId"), &awscdk.CfnOutputProps{
+		Value:       userPool.UserPoolId(),
+		Description: jsii.String("The ID of the Cognito User Pool"),
+		ExportName:  jsii.String("UserPoolId"),
+	})
+
+	awscdk.NewCfnOutput(stack, jsii.String("ApiUrl"), &awscdk.CfnOutputProps{
+		Value:       api.Url(),
+		Description: jsii.String("The URL of the API Gateway"),
+		ExportName:  jsii.String("ApiUrl"),
 	})
 
 	/* userPool.AddTrigger(awscognito.UserPoolOperation_PRE_SIGN_UP(), registerFunction, awscognito.LambdaVersion_V1_0)
 	userPool.AddTrigger(awscognito.UserPoolOperation_PRE_AUTHENTICATION(), loginFunction, awscognito.LambdaVersion_V1_0)
 	*/
-	table.GrantReadWriteData(registerFunction)
-	table.GrantReadWriteData(loginFunction)
-	table.GrantReadWriteData(confirmFunction)
 
 	return stack
 }

@@ -89,18 +89,18 @@ func RegisterUser(user models.User) error {
 }
 
 func ConfirmUser(username, confirmationCode string) error {
-    input := &cognitoidentityprovider.ConfirmSignUpInput{
-        ClientId:         aws.String(clientId),
-        Username:         aws.String(username),
-        ConfirmationCode: aws.String(confirmationCode),
-    }
+	input := &cognitoidentityprovider.ConfirmSignUpInput{
+		ClientId:         aws.String(clientId),
+		Username:         aws.String(username),
+		ConfirmationCode: aws.String(confirmationCode),
+	}
 
-    _, err := cognitoClient.ConfirmSignUp(input)
-    if err != nil {
-        return fmt.Errorf("failed to confirm user: %v", err)
-    }
+	_, err := cognitoClient.ConfirmSignUp(input)
+	if err != nil {
+		return fmt.Errorf("failed to confirm user: %v", err)
+	}
 
-    return nil
+	return nil
 }
 
 func LoginUser(user models.Credentials) (string, error) {
